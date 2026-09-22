@@ -1,0 +1,18 @@
+{
+  "name": "purchase-approval-ios-sideload",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Purchase Approval iOS sideload shell (Capacitor) - loads the production server.",
+  "scripts": {
+    "cap:add": "cap add ios",
+    "cap:sync": "cap sync ios"
+  },
+  "comment:versions": "版本需与主项目保持一致：Capacitor 6.x 最新为 6.2.2，^6.3.0 在 npm 上并不存在（会导致 npm ci 报 ETARGET）",
+  "dependencies": {
+    "@capacitor/core": "^6.2.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.2",
+    "@capacitor/ios": "^6.2.2"
+  }
+}

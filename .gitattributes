@@ -1,0 +1,19 @@
+# 换行符：脚本类文件强制 LF。
+# 原因：gradlew / *.sh 若以 CRLF 入库，macOS/Linux 上 shebang 会变成 "/bin/bash^M"，
+# 直接报 bad interpreter。详见 docs/ARCHITECTURE.md 的构建章节。
+*.sh text eol=lf
+android/gradlew text eol=lf
+gradlew text eol=lf
+
+# 明确声明二进制，禁止 git 做换行转换或文本 diff
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.jar binary
+*.apk binary
+*.ipa binary
+*.keystore binary
+*.jks binary

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="买个Der" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16.png" />
+    <link rel="apple-touch-icon" href="/icons/icon-180.png" sizes="180x180" />
+    <title>买个Der</title>
+    <link rel="stylesheet" href="./css/style.css" />
+    <style>
+      #boot-splash {
+        position: fixed; inset: 0; z-index: 9999;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+        background: linear-gradient(160deg, #2563eb, #1e40af 70%); color: #fff;
+        transition: opacity 0.35s ease;
+      }
+      #boot-splash.hide { opacity: 0; pointer-events: none; }
+      #boot-splash .splash-icon { width: 78px; height: 78px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.28); overflow: hidden; }
+      #boot-splash .splash-icon img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      #boot-splash .splash-name { font-size: 18px; font-weight: 700; letter-spacing: 3px; }
+      #boot-splash .splash-sub { font-size: 11px; opacity: .75; letter-spacing: 1px; }
+      .boot-spinner { width: 22px; height: 22px; border: 2px solid rgba(255,255,255,.35); border-top-color: #fff; border-radius: 50%; animation: bspin .8s linear infinite; }
+      @keyframes bspin { to { transform: rotate(360deg); } }
+      #net-pill {
+        position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom));
+        transform: translate(-50%, 24px); opacity: 0; transition: all .25s ease; z-index: 8000;
+        background: #0f172a; color: #f8fafc; font-size: 12px; padding: 8px 14px;
+        border-radius: 999px; box-shadow: 0 6px 20px rgba(0,0,0,.25);
+        display: flex; gap: 8px; align-items: center; pointer-events: none; max-width: 92vw;
+      }
+      #net-pill.visible { opacity: 1; transform: translate(-50%, 0); }
+      .net-pill-dot { width: 7px; height: 7px; border-radius: 50%; background: #f59e0b; flex: none; }
+      @media (prefers-color-scheme: dark) { #net-pill { background: #1e293b; } }
+    </style>
+  </head>
+  <body>
+    <div id="boot-splash" aria-hidden="true">
+      <div class="splash-icon"><img src="/icons/pa-icon.png" alt="买个Der" /></div>
+      <div class="splash-name">买个Der</div>
+      <div class="splash-sub">MaiGeDer</div>
+      <div class="boot-spinner"></div>
+    </div>
+    <div id="app"></div>
+    <div id="modal-root"></div>
+    <div id="toast-root" class="toast-root"></div>
+    <script type="module" src="./js/app.js"></script>
+  </body>
+</html>

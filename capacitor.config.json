@@ -1,0 +1,21 @@
+{
+  "appId": "cn.furry233.purchase",
+  "appName": "买个Der",
+  "webDir": "public",
+  "loggingEnabled": false,
+  "server": {
+    "url": "https://furry233.cn",
+    "cleartext": false,
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "backgroundColor": "#2563eb",
+      "showSpinner": false
+    }
+  }
+}
