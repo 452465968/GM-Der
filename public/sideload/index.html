@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="买个Der安装" />
+    <link rel="apple-touch-icon" href="/icons/pa-icon.png" />
+    <title>买个Der · iOS 侧载版下载</title>
+    <style>
+      :root { color-scheme: light; }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+        background: linear-gradient(160deg, #eff6ff 0%, #f8fafc 100%);
+        color: #0f172a;
+        line-height: 1.6;
+        padding-bottom: 48px;
+      }
+      .hero {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 60%, #1e40af 100%);
+        color: #fff;
+        padding: 28px 20px 24px;
+        text-align: center;
+      }
+      .hero .logo {
+        width: 84px; height: 84px; border-radius: 20px; margin: 0 auto 12px;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(255,255,255,.16); font-size: 40px; font-weight: 700;
+        box-shadow: 0 8px 24px rgba(0,0,0,.25); overflow: hidden;
+      }
+      .hero .logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .hero h1 { font-size: 22px; letter-spacing: 1px; }
+      .hero p { font-size: 13px; opacity: .85; margin-top: 6px; }
+      .wrap { max-width: 720px; margin: 0 auto; padding: 16px 14px; }
+      .card {
+        background: #fff; border-radius: 16px; padding: 16px;
+        box-shadow: 0 1px 4px rgba(15,23,42,.06), 0 8px 24px rgba(15,23,42,.05);
+        margin-bottom: 14px;
+      }
+      .card h2 { font-size: 16px; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+      .badge { font-size: 12px; padding: 2px 10px; border-radius: 999px; font-weight: 600; }
+      .badge.ok { background: #dcfce7; color: #166534; }
+      .badge.off { background: #fee2e2; color: #991b1b; }
+      .badge.warn { background: #fef9c3; color: #854d0e; }
+      .badge.info { background: #dbeafe; color: #1e40af; }
+      ol, ul { padding-left: 20px; }
+      li { margin-bottom: 6px; font-size: 14px; }
+      .step-no {
+        display: inline-block; width: 20px; height: 20px; line-height: 20px; text-align: center;
+        background: #2563eb; color: #fff; border-radius: 50%; font-size: 12px; margin-right: 6px; flex: none;
+      }
+      .btn {
+        display: block; text-align: center; padding: 12px; border-radius: 12px;
+        font-size: 15px; font-weight: 600; text-decoration: none; margin-top: 10px;
+      }
+      .btn.primary { background: #2563eb; color: #fff; }
+      .btn.green { background: #16a34a; color: #fff; }
+      .btn.gray { background: #e2e8f0; color: #64748b; pointer-events: none; }
+      .btn.secondary { background: #eef2ff; color: #4338ca; }
+      .note { font-size: 12px; color: #64748b; background: #f1f5f9; border-radius: 10px; padding: 8px 10px; margin-top: 10px; }
+      .muted { color: #64748b; font-size: 13px; }
+      .tag { display: inline-block; font-size: 11px; background: #f1f5f9; color: #475569; padding: 2px 8px; border-radius: 6px; margin: 2px 4px 2px 0; }
+      table.kv { width: 100%; font-size: 13px; border-collapse: collapse; }
+      table.kv td { padding: 4px 0; border-bottom: 1px dashed #e2e8f0; }
+      table.kv td:first-child { color: #64748b; width: 96px; }
+      .warn-line { border-left: 4px solid #f59e0b; background: #fffbeb; padding: 10px 12px; border-radius: 8px; font-size: 13px; color: #78350f; margin-top: 8px; }
+      .divider { height: 1px; background: #e2e8f0; margin: 12px 0; }
+      .foot { text-align: center; color: #94a3b8; font-size: 12px; padding: 12px; }
+    </style>
+  </head>
+  <body>
+    <div class="hero">
+      <div class="logo"><img id="appIcon" src="/icons/pa-icon.png" alt="icon" /></div>
+      <h1>买个Der · iOS 侧载版</h1>
+      <p>与现有 Web 版同源数据 · 独立安装共存</p>
+    </div>
+
+    <div class="wrap">
+      <div class="card">
+        <h2>当前构建产物 <span id="statusBadge" class="badge warn">读取中…</span></h2>
+        <table class="kv" id="metaTable">
+          <tr><td>版本</td><td id="mVersion">-</td></tr>
+          <tr><td>文件</td><td id="mFile">-</td></tr>
+          <tr><td>大小</td><td id="mSize">-</td></tr>
+          <tr><td>构建时间</td><td id="mTime">-</td></tr>
+          <tr><td>签名</td><td id="mSigned">-</td></tr>
+          <tr><td>SHA256</td><td id="mSha" style="font-size:11px;word-break:break-all;">-</td></tr>
+        </table>
+        <div id="ipaNote" class="note"></div>
+        <a id="ipaBtn" class="btn gray" href="#" target="_blank" rel="noopener">下载 PurchaseApproval.ipa</a>
+      </div>
+
+      <div class="card">
+        <h2>Android 安装包（APK · 手机 / 平板通用）</h2>
+        <p class="muted">原生壳应用（Capacitor），直接加载线上服务器，与网页版、iPhone 轻应用共用同一数据库。</p>
+        <a class="btn primary" href="/sideload/downloads/purchase-approval-beta1.2.6.apk" target="_blank" rel="noopener">
+          下载 purchase-approval-beta1.2.6.apk（约 4.5MB）
+        </a>
+        <ol>
+          <li>Android 手机或平板下载上面的 APK</li>
+          <li>安装时若提示「未知来源」，允许本次安装即可（装完可关闭该权限）</li>
+          <li>打开后即全屏运行，用与网页版相同的账号登录即可使用</li>
+        </ol>
+        <div class="note">手机与平板界面、功能完全一致（同一套响应式布局）；数据集中存储，支持增量同步、推送触发与离线缓存。</div>
+      </div>
+
+      <div class="card">
+        <h2><span class="step-no">1</span> 免签名 · 立即使用（推荐先体验）</h2>
+        <p class="muted">无需证书、无需电脑，iPhone 自带能力：把线上系统“装”到主屏幕，像 App 一样全屏运行。</p>
+        <ol>
+          <li>用 iPhone 的 Safari 打开系统地址：<span class="tag">https://furry233.cn/</span></li>
+          <li>点击底部「分享」按钮 <span class="tag">⌘</span></li>
+          <li>选择「添加到主屏幕」→ 确认添加</li>
+          <li>回到桌面，点击“买个Der”图标即可全屏使用</li>
+        </ol>
+        <div class="note">该方式与 Web 版共用账号体系与数据，彼此独立存在于桌面，互不影响；限制是纯在线运行（联网使用）。</div>
+      </div>
+
+      <div class="card">
+        <h2><span class="step-no">2</span> 真侧载 · IPA 电脑安装（Apple ID 即可）</h2>
+        <p class="muted">把原生壳 App（独立应用，非网页）安装到 iPhone，适合长期使用与后续扩展离线/推送能力。</p>
+        <ol>
+          <li>电脑下载上面的 <b>PurchaseApproval.ipa</b>（需先完成构建上传，见状态卡片）</li>
+          <li>iPhone 连接电脑，使用 <b>AltStore</b>、<b>Sideloadly</b> 或 <b>爱思助手</b> 导入安装</li>
+          <li>首次需登录你的免费 Apple ID；免费签名每 <b>7 天</b> 需在电脑端重新导入一次</li>
+          <li>安装后进入「设置 → 通用 → VPN 与设备管理」信任开发者描述文件即可打开</li>
+        </ol>
+        <div class="note">仅需免费 Apple ID，无需开发者账号。数据与服务器完全互通（同一后端），登录态与 Web 版相互独立。</div>
+      </div>
+
+      <div class="card" id="otaCard">
+        <h2><span class="step-no">3</span> 企业/开发者证书 · 无线安装</h2>
+        <p class="muted">适合分发给多个 iPhone：点击链接即可 OTA 安装，无需电脑。</p>
+        <a id="otaBtn" class="btn gray" href="#">通过清单安装（itms-services）</a>
+        <div id="otaWarn" class="warn-line">
+          暂不可用：无线安装要求 <b>HTTPS 域名</b> + <b>企业/Ad Hoc 签名</b> 的 .ipa。
+          当前服务器为 HTTP + IP 访问；请按指南 <span class="tag">docs/ios-sideload.md</span> 启用 HTTPS 并上传签名产物后重试。
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>关于本版本</h2>
+        <ul>
+          <li><b>独立存在：</b>拥有独立 App 标识 <span class="tag">cn.purchaseapproval.sideload</span>，与网页版、主屏图标互不覆盖，可同时共存。</li>
+          <li><b>数据互通：</b>所有版本都连接同一套后端与数据库（创建申请、投票审批、通知提醒实时一致）。</li>
+          <li><b>服务器：</b>构建产物由本页分发，上传/更新请使用部署脚本 <span class="tag">deploy/upload-ios-artifact.ps1</span>。</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="foot">买个Der · 侧载分发中心</div>
+
+    <script>
+      (function () {
+        var META_BTN_ID = 'ipaBtn';
+        fetch('ipa.json?t=' + Date.now())
+          .then(function (r) { return r.json(); })
+          .then(function (m) {
+            var badge = document.getElementById('statusBadge');
+            var has = m && m.available && m.size > 0;
+            badge.textContent = has ? '可下载' : '未上传构建产物';
+            badge.className = 'badge ' + (has ? 'ok' : 'off');
+            document.getElementById('mVersion').textContent = (m.version || '-') + ' (' + (m.build || 0) + ')';
+            document.getElementById('mFile').textContent = m.file || '-';
+            document.getElementById('mSize').textContent = has ? (m.sizeText || m.size + ' B') : '-';
+            document.getElementById('mTime').textContent = m.updatedAt ? new Date(m.updatedAt).toLocaleString('zh-CN') : '-';
+            document.getElementById('mSigned').textContent = m.signed
+              ? (m.signMode || '已签名')
+              : (m.available ? '未签名（电脑侧载工具自动重签）' : '-');
+            document.getElementById('mSha').textContent = has ? m.sha256 : '-';
+            var note = document.getElementById('ipaNote');
+            note.textContent = has ? '' : (m.note || '');
+            if (has) {
+              var btn = document.getElementById(META_BTN_ID);
+              var base = document.createElement('a');
+              base.href = location.href;
+              var path = location.pathname.replace(/\/sideload\/.*$/, '') + '/sideload/' + m.file;
+              btn.href = path;
+              btn.textContent = '下载 ' + m.file;
+              btn.className = 'btn primary';
+            }
+            var otaWarn = document.getElementById('otaWarn');
+            var otaBtn = document.getElementById('otaBtn');
+            if (location.protocol === 'https:') {
+              otaWarn.style.display = has && m.signed ? 'none' : 'block';
+              if (has && m.signed) {
+                var base2 = location.origin;
+                otaBtn.href = 'itms-services://?action=download-manifest&url=' + encodeURIComponent(base2 + '/sideload/manifest.plist');
+                otaBtn.className = 'btn green';
+                otaBtn.textContent = '点击安装（itms-services）';
+              }
+            }
+          })
+          .catch(function () {
+            document.getElementById('statusBadge').textContent = '状态获取失败';
+            document.getElementById('statusBadge').className = 'badge off';
+          });
+      })();
+    </script>
+  </body>
+</html>

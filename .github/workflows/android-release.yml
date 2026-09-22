@@ -1,0 +1,174 @@
+# 安卓发版流水线：构建 APK → 写回仓库（apk-store/ 与版本清单）→ 发布到 GitHub Release
+#
+# 两条触发路径：
+#   1）推送 v* 标签（正式发版主路径）
+#      本地：node deploy/bump-version.mjs --code 7 --name 1.2.7
+#            git commit -am "chore(release): v1.2.7" && git tag v1.2.7
+#            git push origin main && git push origin v1.2.7   ← 此时本工作流启动
+#   2）Actions 面板手动触发（可填 versionCode / versionName，不填则沿用 build.gradle）
+#
+# 流水线产出：
+#   · apk-store/purchase-approval-<版本>.apk   提交回 main 分支（仓库里始终有最新 APK）
+#   · public/version.json 回填 size / sha256 / apkUrl（应用内更新据此校验）
+#   · GitHub Release 同名标签下附带 APK 附件，更新说明取自 version.json 的 changelog
+
+name: Android 构建与发版
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      versionName:
+        description: 'versionName，例如 1.2.7（留空则沿用 build.gradle）'
+        required: false
+      versionCode:
+        description: 'versionCode，例如 7（留空则沿用 build.gradle）'
+        required: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      # ---------- 1. 环境准备 ----------
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 安装 Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 准备 JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      # ubuntu 镜像自带 Android SDK，这里只做两件事：接受许可 + 装编译所需组件。
+      # 注意：不要用 android-actions/setup-android，它会执行 `sdkmanager tools`，
+      # 而新版 cmdline-tools 已移除 tools 包，必然失败（Failed to find package 'tools'）。
+      - name: 准备 Android SDK
+        run: |
+          SDKMANAGER=$(ls "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager 2>/dev/null | head -n1)
+          if [ -z "$SDKMANAGER" ]; then echo "未找到 sdkmanager"; exit 1; fi
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" --install "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+          echo "已安装组件：" && "$SDKMANAGER" --list_installed | head -n 20
+
+      # 手动触发时若没填版本号，就以 build.gradle 为准算出标签名（避免出现 "v" 这种空标签）
+      - name: 计算版本号
+        id: ver
+        run: |
+          NAME=$(grep -m1 'versionName' android/app/build.gradle | sed -E 's/.*versionName +"([^"]+)".*/\1/')
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "tag=v$NAME" >> "$GITHUB_OUTPUT"
+          echo "版本号：$NAME（标签 v$NAME）"
+
+      # ---------- 2. 版本号（手动触发时可临时改号） ----------
+      - name: 写入版本号
+        if: github.event_name == 'workflow_dispatch' && (inputs.versionName != '' || inputs.versionCode != '')
+        run: |
+          args=""
+          [ -n "${{ inputs.versionCode }}" ] && args="$args --code ${{ inputs.versionCode }}"
+          [ -n "${{ inputs.versionName }}" ] && args="$args --name ${{ inputs.versionName }}"
+          node deploy/bump-version.mjs $args
+
+      # ---------- 3. 构建 ----------
+      # cap sync：把 public/ 复制进安卓壳，并生成 capacitor-cordova-android-plugins
+      - name: 同步前端到安卓壳
+        run: npx cap sync android
+
+      # 正式签名：提供了 keystore 就出 release 包，否则回落 debug 包（保证流水线一定能跑通）
+      - name: 准备签名密钥（可选）
+        if: env.HAS_KEYSTORE == 'true'
+        env:
+          HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/pa.keystore"
+          echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/pa.keystore" >> "$GITHUB_ENV"
+          echo "ANDROID_KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "ANDROID_KEY_ALIAS=$ANDROID_KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD" >> "$GITHUB_ENV"
+
+      - name: 构建 APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          if [ -n "$ANDROID_KEYSTORE_FILE" ]; then
+            echo "使用正式签名，构建 release 包"
+            ./gradlew assembleRelease --no-daemon
+          else
+            echo "未提供 keystore，构建 debug 包"
+            ./gradlew assembleDebug --no-daemon
+          fi
+
+      # ---------- 4. 收包并回填版本信息 ----------
+      - name: 收集 APK
+        id: apk
+        run: |
+          APK=$(find android/app/build/outputs -name '*.apk' -type f | grep -v 'output-metadata' | head -n1)
+          if [ -z "$APK" ]; then echo "未找到构建产物"; exit 1; fi
+          APP_VERSION=$(node -e "console.log(require('./public/version.json').version)")
+          mkdir -p apk-store
+          # 仓库里始终只保留当前版本一个 APK，避免二进制堆积
+          rm -f apk-store/*.apk
+          TARGET="apk-store/purchase-approval-${APP_VERSION}.apk"
+          cp "$APK" "$TARGET"
+          # 回填 size / sha256 / apkUrl（以 build.gradle 为准同步 version.json 与 version.js）
+          node deploy/bump-version.mjs --apk-path "$TARGET"
+          echo "path=$TARGET" >> "$GITHUB_OUTPUT"
+          echo "version=$APP_VERSION" >> "$GITHUB_OUTPUT"
+
+      # ---------- 5. 提交回仓库 ----------
+      - name: 提交 APK 与版本清单
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apk-store public/version.json public/js/version.js android/app/build.gradle
+          git diff --staged --quiet && echo "无变更需要提交" || git commit -m "chore(release): 更新 APK 与版本信息 [skip ci]"
+          git push origin HEAD:main
+
+      # ---------- 6. 发布 GitHub Release ----------
+      - name: 生成更新说明
+        run: |
+          node -e "
+            const v = require('./public/version.json');
+            const lines = v.android.changelog || [];
+            const body = ['## 更新内容', '', ...lines.map(l => '- ' + l), '',
+              '- 文件大小：' + (v.android.size/1048576).toFixed(2) + ' MB',
+              '- SHA-256：\`' + v.android.sha256 + '\`'].join('\n');
+            require('fs').writeFileSync('release-notes.md', body);
+          "
+
+      - name: 创建或更新 Release
+        env:
+          TAG: ${{ github.event_name == 'push' && github.ref_name || steps.ver.outputs.tag }}
+        run: |
+          APK="${{ steps.apk.outputs.path }}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK" --clobber
+          else
+            gh release create "$TAG" "$APK" --title "$TAG" --notes-file release-notes.md
+          fi
+          echo "Release: https://github.com/${{ github.repository }}/releases/tag/$TAG"

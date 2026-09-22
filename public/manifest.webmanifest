@@ -1,0 +1,46 @@
+{
+  "name": "买个Der",
+  "short_name": "买个Der",
+  "description": "买个Der：申请、审批、留痕，全流程在线化（轻应用版，与网页版同源数据）",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1e40af",
+  "theme_color": "#2563eb",
+  "lang": "zh-CN",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/pa-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "新建申请",
+      "short_name": "新建",
+      "url": "/#/apps/new"
+    },
+    {
+      "name": "审批工作台",
+      "short_name": "待办",
+      "url": "/#/review"
+    }
+  ]
+}

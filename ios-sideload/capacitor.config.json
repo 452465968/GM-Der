@@ -1,0 +1,13 @@
+{
+  "appId": "cn.purchaseapproval.sideload",
+  "appName": "买个Der",
+  "webDir": "www",
+  "server": {
+    "url": "https://furry233.cn",
+    "cleartext": true,
+    "hostname": "sideload.local"
+  },
+  "ios": {
+    "contentInset": "never"
+  }
+}

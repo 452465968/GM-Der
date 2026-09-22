@@ -1,0 +1,18 @@
+{
+  "appName": "买个Der · 侧载版",
+  "appId": "cn.purchaseapproval.sideload",
+  "bundleId": "cn.purchaseapproval.sideload",
+  "version": "0.0.0",
+  "build": 0,
+  "file": "PurchaseApproval.ipa",
+  "size": 0,
+  "sizeText": "0 B",
+  "sha256": "",
+  "signed": false,
+  "signMode": "unsigned",
+  "available": false,
+  "updatedAt": null,
+  "homepage": "https://furry233.cn/",
+  "serverRegion": "阿里云 · 中国大陆",
+  "note": "尚未上传构建产物：可在装有 Xcode 的 Mac 上执行 ios-sideload 目录构建，或推送 GitHub 后触发 ios-build 工作流，产物将自动回传本目录。"
+}

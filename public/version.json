@@ -1,0 +1,19 @@
+{
+  "version": "beta1.2.6",
+  "updatedAt": "2026-09-22T05:27:47.250Z",
+  "note": "与 public/js/version.js 中的 APP_VERSION 保持一致；发版时两处同步修改",
+  "android": {
+    "latestVersion": "beta1.2.6",
+    "latestCode": 6,
+    "apkUrl": "/sideload/downloads/purchase-approval-beta1.2.6.apk",
+    "size": 4675651,
+    "sha256": "32476a2d252679bd61657d614de7210c9fb2107bf0a5cd7e9e7046e2396e29fd",
+    "updatedAt": "2026-09-22T05:27:47.250Z",
+    "changelog": [
+      "安卓应用内更新：下载完成后自动校验并拉起系统安装",
+      "新增安装完整性校验（SHA-256）与包名校验，防止装错包",
+      "兼容 Android 8.0+ 未知来源权限与 Android 11+ 安装权限引导",
+      "安装结果回调：已安装 / 用户取消 / 失败，均可一键重试"
+    ]
+  }
+}

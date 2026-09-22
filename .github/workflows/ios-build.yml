@@ -1,0 +1,135 @@
+# Build the iOS sideload IPA on a macOS runner and upload it to the Aliyun server.
+#
+# How to use:
+#   1. Push this repo to GitHub.
+#   2. Add repository secrets:
+#        SERVER_HOST (服务器 IP 或域名，不提供则跳过上传步骤)
+#        SERVER_USER (默认 root)
+#        SERVER_PORT (默认 22)
+#        SERVER_SSH_KEY  (用于登录服务器的 SSH 私钥内容)
+#   3. Run the workflow (Actions -> "Build iOS sideload" -> Run workflow).
+#      The unsigned .ipa + updated ipa.json are uploaded to the server, and the
+#      unsigned ipa is also kept as a downloadable Actions artifact.
+#
+# The produced .ipa is UNSIGNED by design: sideload tools (AltStore / Sideloadly /
+# 爱思助手) re-sign it with the user's own free Apple ID during installation.
+# For OTA (itms-services) install, replace the archive step with an Enterprise or
+# Ad Hoc signed export and enable HTTPS on the server (docs/ios-sideload.md).
+name: Build iOS sideload
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'ios-v*'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: ios-sideload
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: ios-sideload/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Add iOS platform
+        run: npx cap add ios
+
+      - name: Sync web assets & config
+        run: npx cap sync ios
+
+      - name: Archive app (unsigned)
+        run: |
+          xcodebuild -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -archivePath build/PA.xcarchive \
+            -allowProvisioningUpdates \
+            CODE_SIGNING_ALLOWED=NO archive
+
+      - name: Package unsigned IPA
+        run: |
+          mkdir -p build/Payload
+          cp -R build/PA.xcarchive/Products/Applications/App.app build/Payload/
+          cd build && zip -q -r PurchaseApproval-unsigned.ipa Payload -x '*.DS_Store'
+          cd ..
+          ls -lh build/PurchaseApproval-unsigned.ipa
+
+      - name: Upload unsigned IPA as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PurchaseApproval-unsigned
+          path: ios-sideload/build/PurchaseApproval-unsigned.ipa
+          if-no-files-found: error
+
+      # 注意：步骤级 if 中【不能】使用 secrets 上下文（会导致整个工作流文件无效）。
+      # 正确做法：把 secret 先注入 env，再用 env 判断。
+      - name: Publish to server sideload center
+        if: env.SERVER_HOST != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          # 服务器地址一律来自 Secrets，不在仓库里保留默认值
+          HOST="${SERVER_HOST}"
+          USER="${SERVER_USER:-root}"
+          PORT="${SERVER_PORT:-22}"
+          ssh-keyscan -p "$PORT" "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+          IPA=ios-sideload/build/PurchaseApproval-unsigned.ipa
+          DEST=/opt/purchase-approval/public/sideload
+          SIZE=$(stat -c%s "$IPA")
+          SHA=$(shasum -a 256 "$IPA" | awk '{print $1}')
+          NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+          scp -P "$PORT" "$IPA" "${USER}@${HOST}:${DEST}/PurchaseApproval.ipa"
+
+          cat > /tmp/ipa.json <<EOF
+          {
+            "appName": "Purchase Approval (Sideload)",
+            "appId": "cn.purchaseapproval.sideload",
+            "bundleId": "cn.purchaseapproval.sideload",
+            "version": "1.0.0",
+            "build": ${GITHUB_RUN_NUMBER},
+            "file": "PurchaseApproval.ipa",
+            "size": ${SIZE},
+            "sha256": "${SHA}",
+            "signed": false,
+            "signMode": "unsigned (resign by sideload tools)",
+            "available": true,
+            "updatedAt": "${NOW}",
+            "homepage": "http://${HOST}/",
+            "serverRegion": "Aliyun",
+            "note": ""
+          }
+          EOF
+          python3 - <<'PY'
+          import json
+          with open('/tmp/ipa.json', encoding='utf-8') as f:
+              data = json.load(f)
+          size = data['size']
+          data['sizeText'] = f"{size/1024/1024:.1f} MB" if size >= 1024*1024 else f"{size/1024:.0f} KB"
+          with open('/tmp/ipa.json', 'w', encoding='utf-8') as f:
+              json.dump(data, f, ensure_ascii=False, indent=2)
+          PY
+          scp -P "$PORT" /tmp/ipa.json "${USER}@${HOST}:${DEST}/ipa.json"
+          echo "Published to http://${HOST}/sideload/"
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
