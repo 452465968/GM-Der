@@ -1,0 +1,46 @@
+# 依赖
+node_modules/
+
+# 运行期数据（data/db.json 含真实账号与业务数据；通知队列/日志也在 data/ 下）
+# 首次启动时由 server/db.js 自动创建目录并写入种子数据
+data/
+# 上传的图片（申请单附图）
+uploads/
+
+# 环境变量与密钥：仓库只保留 .env.example
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.jks
+*.keystore
+
+# 二进制分发包：APK 由 CI 随发版更新并提交（见 .github/workflows/android-release.yml），
+# 需要随仓库分发，因此【不忽略】；IPA 仍由 Actions 产物提供，不入库
+public/sideload/*.ipa
+
+# Capacitor Android 工程：忽略本地构建产物与 SDK 路径配置
+android/.gradle/
+android/build/
+android/app/build/
+android/capacitor-cordova-android-plugins/build/
+android/local.properties
+android/.idea/
+
+# iOS 侧载壳工程：ios/ 由 `npx cap add ios` 生成，build/ 为归档目录
+ios-sideload/ios/
+ios-sideload/build/
+ios-sideload/node_modules/
+
+# 历史源码归档与测试残留（可随时重建）
+app-source-*.tar.gz
+purchase-approval-src-*.zip
+.smoke-p1/
+
+# IDE 私有目录（记忆、MCP、技能配置，含本机绝对路径，不入库）
+.codebuddy/
+
+# 杂项
+*.log
+.DS_Store

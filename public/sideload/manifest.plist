@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  买个Der · 侧载版 — iOS OTA 无线安装清单（企业证书 / Ad Hoc 签名版）
+  前提：
+    1) 本机已启用 HTTPS（itms-services 只接受 https）；
+    2) 放置的 .ipa 已用「企业证书」或包含设备 UDID 的「Ad Hoc 描述文件」签名。
+  部署脚本 deploy/repoint-sideload.ps1 会把 __DOMAIN__ 替换为你的 https 域名。
+  未替换前，本文件仅供结构参考，iOS 不会安装。
+-->
+<plist version="1.0">
+  <dict>
+    <key>items</key>
+    <array>
+      <dict>
+        <key>assets</key>
+        <array>
+          <dict>
+            <key>kind</key>
+            <string>software-package</string>
+            <key>url</key>
+            <string>https://furry233.cn/sideload/PurchaseApproval.ipa</string>
+          </dict>
+          <dict>
+            <key>kind</key>
+            <string>display-image</string>
+            <key>url</key>
+            <string>https://furry233.cn/icons/pa-icon.png</string>
+          </dict>
+          <dict>
+            <key>kind</key>
+            <string>full-size-image</string>
+            <key>url</key>
+            <string>https://furry233.cn/icons/pa-icon.png</string>
+          </dict>
+        </array>
+        <key>metadata</key>
+        <dict>
+          <key>bundle-identifier</key>
+          <string>cn.purchaseapproval.sideload</string>
+          <key>bundle-version</key>
+          <string>1.0.0</string>
+          <key>kind</key>
+          <string>software</string>
+          <key>subtitle</key>
+          <string>买个Der · 侧载版</string>
+          <key>title</key>
+          <string>买个Der</string>
+        </dict>
+      </dict>
+    </array>
+  </dict>
+</plist>
