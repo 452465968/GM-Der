@@ -7,7 +7,7 @@
  *  - 图片（/uploads、/icons）：缓存优先，后台更新
  * 变更外壳文件后请递增 SHELL_VERSION 以触发更新。
  */
-const SHELL_VERSION = 'pa-shell-v22';
+const SHELL_VERSION = 'pa-shell-v23';
 const SHELL_CACHE = SHELL_VERSION;
 const STATIC_CACHE = 'pa-static-v21';
 const API_CACHE = 'pa-api-v1';

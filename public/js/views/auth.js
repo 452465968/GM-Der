@@ -18,7 +18,7 @@ export function login({ container, setUser, rerender }) {
   container.innerHTML = `
     <div class="auth-card">
       <div class="auth-brand">
-        <div class="logo">购</div>
+        <div class="logo"><img src="/icons/pa-icon.png" alt="买个Der" /></div>
         <div><h1>买个Der</h1><p>申请 · 审批 · 留痕，全流程在线化</p></div>
       </div>
       <div class="auth-tabs">

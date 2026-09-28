@@ -96,6 +96,15 @@ textarea {
   align-items: center;
   justify-content: center;
   font-weight: 700;
+  overflow: hidden;
+  flex: none;
+}
+
+.auth-brand .logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .auth-brand h1 {
