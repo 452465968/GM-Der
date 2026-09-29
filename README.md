@@ -1,6 +1,6 @@
 # 买个Der（purchase-approval）
 
-> 申请提交 → 审批流转 → 记录查询 的一体化审批系统。
+> 申请提交 → 审批流转 → 记录查询 的一体化审批系统。(其实就是让你朋友参谋下你需不需要买这个，拔草神器）
 >
 > 一套 Node + Express 后端、一套零框架原生前端；同一份前端代码再用 Capacitor 壳打包成 **Android 原生 App**，并提供 **iOS 侧载**方案。三端共用同一套后端与同一份数据。
 
@@ -15,7 +15,7 @@
 | **iOS 应用** | `ios-sideload/capacitor.config.json`（壳）+ `public/sideload/`（分发页） | GitHub Actions `Build iOS sideload`（macOS runner + xcodebuild） | 未签名 `.ipa` → 上传到分发页 |
 | **后端服务** | `server/index.js` | `npm start`（`node server/index.js`） | 监听 `PORT`（默认 3000），数据落 `data/db.json` |
 
-三端都**不各自实现业务逻辑**：Android/iOS 壳通过 Capacitor 的 `server.url` 加载线上网页（`https://furry233.cn`），原生层只补「应用内下载安装 APK」这类网页做不到的事。
+三端都**不干扰各自实现业务逻辑**：Android/iOS 壳通过 Capacitor 的 `server.url` 加载线上网页（`https://furry233.cn`），原生层只补「应用内下载安装 APK」这类网页做不到的事。
 
 ---
 
