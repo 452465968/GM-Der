@@ -129,12 +129,14 @@ if (opts.deployOnly) {
     // 排除仓库元操作类提交（发版本身、历史重建等），只保留 feat / fix / docs / refactor 等
     .filter((s) => !/^chore(\(release\)|:)/.test(s));
 }
-if (!entries.length) entries = ['体验优化与问题修复'];
-info(`更新日志 ${entries.length} 条：`);
-entries.forEach((e) => info(`  · ${e}`));
+if (!opts.deployOnly) {
+  if (!entries.length) entries = ['体验优化与问题修复'];
+  info(`更新日志 ${entries.length} 条：`);
+  entries.forEach((e) => info(`  · ${e}`));
+}
 
 /* --------------------- 3. 版本号落盘 --------------------- */
-// 说明：不带 --tag 时 APK 不会重建，此时只自增 Web 版本号（version.json.version / APP_VERSION），
+// 说明：--no-tag 时 APK 不会重建，此时只自增 Web 版本号（version.json.version / APP_VERSION），
 // android.latestVersion / latestCode / apkUrl / size / sha256 保持与现有 APK 一致，
 // 否则安卓客户端会拿到「新版号 + 旧 APK」，反复提示更新却装不上。
 step('3/7', opts.tag ? '版本号四处同步（含安卓）' : 'Web 版本号自增（安卓版本保持与现有 APK 一致）');
