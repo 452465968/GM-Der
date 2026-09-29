@@ -294,17 +294,17 @@ if (opts.dry) {
     }
   }
   const pushEnv = { ...process.env, GIT_TERMINAL_PROMPT: '0' };
+  // 注意：不要加 -c http.version=HTTP/1.1，实测会让推送卡到 75s 连接超时；默认 HTTP/2 正常
   const runPush = () =>
     spawnSync('git', [
       '-c', 'credential.helper=',
-      '-c', 'http.version=HTTP/1.1',
       'push', pushUrl, 'HEAD:main',
     ], { cwd: ROOT, encoding: 'utf8', env: pushEnv });
 
   let push = runPush();
-  // 本机访问 github.com 会间歇性 TLS 握手超时，重试一次
-  if (push.status !== 0) {
-    info('首次推送失败，重试中…');
+  // 本机访问 github.com 会间歇性连接超时，最多重试 3 次
+  for (let i = 0; push.status !== 0 && i < 3; i++) {
+    info(`推送失败，第 ${i + 1} 次重试…（本机到 github.com 会间歇性超时）`);
     push = runPush();
   }
   if (push.status !== 0) die('推送失败：' + ((push.stderr || '') + (push.stdout || '')).trim());
@@ -313,8 +313,13 @@ if (opts.dry) {
   if (opts.tag) {
     const tagName = `v${newName}`;
     spawnSync('git', ['tag', '-f', tagName], { cwd: ROOT, encoding: 'utf8' });
-    const tp = spawnSync('git', ['-c', 'credential.helper=', '-c', 'http.version=HTTP/1.1', 'push', pushUrl, '-f', tagName],
+    let tp = spawnSync('git', ['-c', 'credential.helper=', 'push', pushUrl, '-f', tagName],
       { cwd: ROOT, encoding: 'utf8', env: pushEnv });
+    for (let i = 0; tp.status !== 0 && i < 3; i++) {
+      info(`标签推送失败，第 ${i + 1} 次重试…`);
+      tp = spawnSync('git', ['-c', 'credential.helper=', 'push', pushUrl, '-f', tagName],
+        { cwd: ROOT, encoding: 'utf8', env: pushEnv });
+    }
     if (tp.status !== 0) die('标签推送失败：' + ((tp.stderr || '') + (tp.stdout || '')).trim());
     ok(`已推送标签 ${tagName}（将触发 APK 构建流水线）`);
   }
