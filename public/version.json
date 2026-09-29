@@ -1,14 +1,14 @@
 {
   "version": "beta1.2.7",
-  "updatedAt": "2026-09-29T05:55:14.741Z",
+  "updatedAt": "2026-09-29T06:05:15.442Z",
   "note": "与 public/js/version.js 中的 APP_VERSION 保持一致；发版时两处同步修改",
   "android": {
-    "latestVersion": "beta1.2.6",
-    "latestCode": 6,
+    "latestVersion": "beta1.2.7",
+    "latestCode": 7,
     "apkUrl": "/sideload/downloads/purchase-approval-beta1.2.6.apk",
     "size": 4675651,
     "sha256": "32476a2d252679bd61657d614de7210c9fb2107bf0a5cd7e9e7046e2396e29fd",
-    "updatedAt": "2026-09-22T05:27:47.250Z",
+    "updatedAt": "2026-09-29T06:05:15.447Z",
     "changelog": [
       "feat: 新增一键发版脚本 deploy/ship.mjs",
       "fix: 登录页品牌图标改为买个Der 图标"

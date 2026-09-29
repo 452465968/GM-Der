@@ -3,13 +3,19 @@
  * 一键发版（macOS / Linux）：版本号自增 → 生成更新日志 → 提交 → 部署阿里云 → 线上验证 → 推送 GitHub
  *
  * 用法：
- *   node deploy/ship.mjs                 # 完整流程（patch 自增）
+ *   node deploy/ship.mjs                 # 完整流程（patch 自增 + 打 v<name> 标签触发 APK 构建）
  *   node deploy/ship.mjs --bump minor    # patch | minor | major，默认 patch
- *   node deploy/ship.mjs --tag           # 额外打 v<name> 标签（会触发 GitHub Actions 构建 APK）
+ *   node deploy/ship.mjs --no-tag        # 不打标签（Web 版本照常自增，安卓版本保持不动）
+ *   node deploy/ship.mjs --deploy-only   # 只把当前代码（含 apk-store 与 version.json）同步到服务器，不改号不提交
  *   node deploy/ship.mjs --no-deploy     # 只改号 + 提交 + 推送，不部署
  *   node deploy/ship.mjs --no-push       # 只改号 + 提交 + 部署，不推送 GitHub
  *   node deploy/ship.mjs --dry           # 只打印将要执行的内容，不落盘、不部署、不推送
  *   node deploy/ship.mjs --changelog "文本"   # 可重复传入，覆盖自动生成的更新日志
+ *
+ * 每次发版固定同步三件事：改号提交 → 部署服务器（pm2 重启）→ 推送 GitHub + 打 v 标签。
+ * 打标签会触发 .github/workflows/android-release.yml：构建 APK → 提交回 main（apk-store/ 与
+ * version.json 的 size/sha256）→ 发 GitHub Release。CI 回写后需再跑一次
+ * `git pull && node deploy/ship.mjs --deploy-only`，服务器才会分发到新 APK。
  *
  * 环境变量（写在本机 .env 中，绝不入库；服务器地址与密钥不写死在脚本里）：
  *   PA_SERVER      服务器登录串，如 root@furry233.cn 或 root@<IP>
@@ -33,12 +39,15 @@ const ROOT = path.resolve(import.meta.dirname, '..');
 
 /* ------------------------------- 参数 ------------------------------- */
 const argv = process.argv.slice(2);
-const opts = { bump: 'patch', changelog: [] };
+// 默认打标签：每次发版都同步「改号提交 / 部署 / 推送+APK 构建」
+const opts = { bump: 'patch', changelog: [], tag: true };
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
   if (a === '--bump') opts.bump = argv[++i];
   else if (a === '--changelog') opts.changelog.push(argv[++i]);
   else if (a === '--tag') opts.tag = true;
+  else if (a === '--no-tag') opts.tag = false;
+  else if (a === '--deploy-only') opts.deployOnly = true;
   else if (a === '--no-deploy') opts.noDeploy = true;
   else if (a === '--no-push') opts.noPush = true;
   else if (a === '--dry') opts.dry = true;
@@ -90,19 +99,27 @@ const oldPrefix = versionJson.version && versionJson.version.endsWith(oldName)
   ? versionJson.version.slice(0, versionJson.version.length - oldName.length)
   : 'beta';
 
-const [maj, min, pat] = oldName.split('.').map(Number);
 let newName;
-if (opts.bump === 'major') newName = `${maj + 1}.0.0`;
-else if (opts.bump === 'minor') newName = `${maj}.${min + 1}.0`;
-else newName = `${maj}.${min}.${pat + 1}`;
 const newCode = oldCode + 1;
-const newAppVersion = oldPrefix + newName;
-info(`versionName ${oldName} -> ${newName}；versionCode ${oldCode} -> ${newCode}；前端版本 -> ${newAppVersion}`);
+let newAppVersion;
+if (opts.deployOnly) {
+  newAppVersion = versionJson.version;
+  info(`(--deploy-only) 不改号，以当前版本 ${newAppVersion} 同步到服务器`);
+} else {
+  const [maj, min, pat] = oldName.split('.').map(Number);
+  if (opts.bump === 'major') newName = `${maj + 1}.0.0`;
+  else if (opts.bump === 'minor') newName = `${maj}.${min + 1}.0`;
+  else newName = `${maj}.${min}.${pat + 1}`;
+  newAppVersion = oldPrefix + newName;
+  info(`versionName ${oldName} -> ${newName}；versionCode ${oldCode} -> ${newCode}；前端版本 -> ${newAppVersion}`);
+}
 
 /* --------------------- 2. 生成更新日志 --------------------- */
 step('2/7', '生成更新日志');
 let entries = opts.changelog.slice();
-if (!entries.length) {
+if (opts.deployOnly) {
+  info('(--deploy-only 跳过)');
+} else if (!entries.length) {
   const lastTag = git(['tag', '--list', 'v*', '--sort=-v:refname']).split('\n').filter(Boolean)[0] || '';
   const range = lastTag ? `${lastTag}..HEAD` : '-20';
   entries = git(['log', range, '--pretty=format:%s'])
@@ -124,7 +141,9 @@ step('3/7', opts.tag ? '版本号四处同步（含安卓）' : 'Web 版本号�
 const VERSION_JSON = path.join(ROOT, 'public/version.json');
 const VERSION_JS = path.join(ROOT, 'public/js/version.js');
 
-if (opts.tag) {
+if (opts.deployOnly) {
+  info('(--deploy-only 跳过)');
+} else if (opts.tag) {
   const bumpArgs = ['deploy/bump-version.mjs', '--code', String(newCode), '--name', newName, '--prefix', oldPrefix];
   for (const e of entries) bumpArgs.push('--changelog', e);
   if (opts.dry) bumpArgs.push('--dry');
@@ -157,7 +176,9 @@ step('4/7', '写入 CHANGELOG.md');
 const changelogPath = path.join(ROOT, 'CHANGELOG.md');
 const dateStr = new Date().toISOString().slice(0, 10);
 const block = `\n## ${newAppVersion}（${dateStr}）\n\n${entries.map((e) => `- ${e}`).join('\n')}\n`;
-if (!opts.dry) {
+if (opts.deployOnly) {
+  info('(--deploy-only 跳过)');
+} else if (!opts.dry) {
   const old = fs.existsSync(changelogPath) ? fs.readFileSync(changelogPath, 'utf8') : '# 更新日志\n';
   const marker = '# 更新日志\n';
   const rest = old.startsWith(marker) ? old.slice(marker.length) : old;
@@ -169,7 +190,9 @@ if (!opts.dry) {
 
 /* --------------------- 5. 提交 --------------------- */
 step('5/7', '提交改动');
-if (!opts.dry) {
+if (opts.deployOnly) {
+  info('(--deploy-only 跳过)');
+} else if (!opts.dry) {
   git(['add', '-A']);
   const staged = git(['diff', '--cached', '--name-only']);
   if (!staged) {
@@ -253,11 +276,23 @@ if (opts.dry) {
 step('7/7', '推送 GitHub');
 if (opts.dry) {
   info('(--dry 未推送)');
-} else if (opts.noPush) {
-  info('(--no-push 跳过)');
+} else if (opts.noPush || opts.deployOnly) {
+  info(opts.deployOnly ? '(--deploy-only 跳过)' : '(--no-push 跳过)');
 } else {
   const remote = git(['remote', 'get-url', 'origin']);
   const pushUrl = GITHUB_TOKEN ? remote.replace('https://', `https://${GITHUB_TOKEN}@`) : remote;
+
+  // CI 回写的提交（apk-store/ 与 version.json）会让本地落后，推送前先并入远端
+  const noPrompt = { cwd: ROOT, encoding: 'utf8', env: { ...process.env, GIT_TERMINAL_PROMPT: '0' } };
+  const fetched = spawnSync('git', ['fetch', pushUrl, 'main'], noPrompt);
+  if (fetched.status === 0) {
+    const behind = Number(git(['rev-list', '--count', 'HEAD..FETCH_HEAD']) || '0');
+    if (behind > 0) {
+      const pr = spawnSync('git', ['pull', '--rebase', '--no-tags', pushUrl, 'main'], noPrompt);
+      if (pr.status !== 0) die('本地落后于远端且自动 rebase 失败，请手动 `git pull --rebase origin main` 后重跑');
+      info(`已并入远端 ${behind} 个提交（通常是 CI 回填的 APK 与版本信息）`);
+    }
+  }
   const pushEnv = { ...process.env, GIT_TERMINAL_PROMPT: '0' };
   const runPush = () =>
     spawnSync('git', [
