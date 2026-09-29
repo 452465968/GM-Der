@@ -11,7 +11,10 @@
     "cap:add:android": "cap add android",
     "cap:sync": "cap sync android",
     "cap:open:android": "cap open android",
-    "android:assemble": "cd android && gradlew assembleDebug"
+    "android:assemble": "cd android && gradlew assembleDebug",
+    "ship": "node deploy/ship.mjs",
+    "ship:tag": "node deploy/ship.mjs --tag",
+    "ship:dry": "node deploy/ship.mjs --dry"
   },
   "devDependencies": {
     "@capacitor/android": "^6.1.2",
